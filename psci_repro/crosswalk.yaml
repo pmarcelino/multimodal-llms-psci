@@ -1,0 +1,163 @@
+# PSCI ↔ LTPP DIM ↔ ASTM D6433 distress crosswalk
+# Used by the agent to translate detector outputs (LTPP/ASTM-trained models)
+# into the PSCI manual's distress vocabulary before scoring.
+#
+# Authoritative rubric:
+#   Rural Flexible Roads Manual, Vol. 1 of 3 — Pavement Surface Condition Index
+#   Department of Transport, Tourism and Sport (Ireland)
+#   Issue 1, Rev. 1, November 2013 (re-hosted May 2025 on roadguidelines.ie)
+#
+# Reference vocabularies:
+#   LTPP DIM 5th Revised Edition (FHWA-HRT-13-092, May 2014) — flexible-pavement section
+#   ASTM D6433-23 (Standard Practice for Roads and Parking Lots PCI Surveys)
+
+psci_manual:
+  title: Rural Flexible Roads Manual — PSCI
+  jurisdiction: Ireland (non-national / local-authority roads)
+  scale: 1-10 (1 = failed, 10 = excellent / new construction)
+  rating_basis: visual surface distress only (no IRI, no FWD)
+  recommended_resurvey: every 2 years (annual preferred)
+
+distress_categories:
+
+  surface_defects:
+    - psci_term: Ravelling
+      definition: progressive loss of binder and aggregate chippings from the surface
+      ltpp:
+        - Raveling
+      astm_d6433:
+        - Weathering and Raveling
+      severity_cues:
+        moderate: small aggregate worn away, tops of large aggregate exposed
+        severe: most of new surface lost, older surface exposed beneath
+      distinguish_from: Edge Breakup (which is structural, with cracking + layer loss)
+
+    - psci_term: Bleeding
+      aliases: [Fatting Up]
+      definition: film of excess bituminous material on surface; shiny, sticky in hot weather
+      ltpp:
+        - Bleeding
+      astm_d6433:
+        - Bleeding
+
+  pavement_deformation:
+    - psci_term: Rutting
+      definition: permanent longitudinal deformation in wheelpaths from traffic loading
+      ltpp:
+        - Rutting
+      astm_d6433:
+        - Rutting
+      severity_cues:
+        severe: ">50 mm rut depth — indicates base/subgrade consolidation (structural failure)"
+
+    - psci_term: Surface Distortion
+      definition: any permanent surface deformation other than rutting (depressions, sags, shoving, frost heave, settlement)
+      ltpp:
+        - Shoving
+        # depressions/settlement are not a single LTPP type for AC; captured under condition notes
+      astm_d6433:
+        - Bumps and Sags
+        - Corrugation
+        - Depression
+        - Swell
+        - Shoving
+      severity_cues:
+        moderate: reduces driver comfort speed below 50 km/h
+        severe: reduces driver comfort speed below 30 km/h
+
+  cracks:
+    - psci_term: Alligator Cracking
+      aliases: [Fatigue Cracking, Chicken-wire Cracking]
+      definition: interconnected polygons (~25–125 mm) from fatigue failure under traffic; often inadequate base/subgrade
+      ltpp:
+        - Fatigue Cracking
+      astm_d6433:
+        - Alligator Cracking
+      severity_cues:
+        low: fine longitudinal hairline cracks, parallel, no spalling
+        medium: parallel + interconnecting cracks, lightly spalled
+        high: well-defined polygon pattern, spalled edges, pieces loose or rocking under traffic
+
+    - psci_term: Edge Breakup/Cracking
+      definition: cracking and/or material loss within 300 mm of pavement edge; structural distress
+      ltpp:
+        - Edge Cracking
+      astm_d6433:
+        - Edge Cracking
+      severity_cues:
+        - any singular or multiple cracking within 300 mm of edge
+        - considerable breakup with portions of edge removed
+        - mix of potholing + cracking + patching along edge
+      distinguish_from: edge Ravelling (no underlying-layer loss, no cracking)
+
+    - psci_term: Other Cracking
+      includes: [Longitudinal, Transverse, Reflection, Slippage]
+      definition: cracks not classified as alligator or edge — parallel to centreline, perpendicular to centreline, reflected from underlying joints, or crescent-shaped slippage
+      ltpp:
+        - Longitudinal Cracking (Wheel Path)
+        - Longitudinal Cracking (Non-Wheel Path)
+        - Transverse Cracking
+        - Reflection Cracking at Joints
+      astm_d6433:
+        - Longitudinal & Transverse Cracking
+        - Joint Reflection Cracking
+        - Slippage Cracking
+
+  surface_openings:
+    - psci_term: Patching
+      definition: area of original pavement that has been removed and replaced (or surface-applied repair)
+      ltpp:
+        - Patch / Patch Deterioration
+      astm_d6433:
+        - Patching and Utility Cut Patching
+
+    - psci_term: Potholes
+      definition: bowl-shaped holes of various sizes resulting from localised disintegration
+      ltpp:
+        - Potholes
+      astm_d6433:
+        - Potholes
+
+    - psci_term: Road Disintegration
+      definition: advanced combined failure — extensive alligator + potholes + edge breakup + raveling — pavement no longer functions as a bound surface
+      ltpp: []  # no single equivalent; emergent from combinations
+      astm_d6433: []
+      detection_rule: flag when ≥3 of {high-severity Alligator, multiple Potholes, severe Edge Breakup, severe Ravelling} co-occur on the same segment
+
+# Distresses present in LTPP/ASTM that PSCI does NOT score directly.
+# The agent may still detect them as evidence, but should NOT introduce
+# them as standalone PSCI categories — fold their effect into the closest
+# PSCI category or into the holistic 1-10 rating.
+unmapped_in_psci:
+  ltpp_only:
+    - Block Cracking            # treat as evidence of aging → influences Other Cracking + Ravelling assessment
+    - Polished Aggregate        # skid-resistance, not surface-condition; out of PSCI scope
+    - Lane-to-Shoulder Drop-Off # geometry/edge; partially captured under Edge Breakup if accompanied by cracking
+    - Water Bleeding and Pumping
+  astm_only:
+    - Block Cracking
+    - Polished Aggregate
+    - Lane/Shoulder Drop-Off
+    - Railroad Crossing
+
+# Manual identifies three deterioration modes the agent should reason about
+# when justifying a PSCI score (helps tie distress evidence to root cause).
+deterioration_modes:
+  - environmental: weathering and aging (binder hardening, ravelling, block cracking)
+  - structural: repeated traffic loading (alligator, rutting >50 mm, edge breakup)
+  - unsuitable_materials: subgrade consolidation, subsidence (surface distortion, depressions)
+
+# Holistic PSCI band → typical distress signature (extracted from manual TOC,
+# Section 3 pp.25-43). Use as priors during scoring; the per-band photo
+# exemplars in the manual remain the source of truth.
+psci_band_signatures:
+  10: new construction; no visible distress
+  9:  near-new; very minor surface defects only
+  8:  isolated minor cracks or surface defects; no deformation
+  7:  early-stage cracking and/or low-severity surface defects
+  6:  moderate cracking, possible early ravelling/bleeding, no structural distress
+  5:  multiple distress types at moderate severity; possibly first signs of structural distress
+  4:  structural distress emerging — alligator and/or rutting at moderate severity, edge breakup
+  3:  advanced structural distress; high-severity alligator, rutting, edge breakup, potholes
+  2:  near-failure; extensive distress combinations, road disintegration beginning
+  1:  failed pavement; not safely trafficable without major rehabilitation

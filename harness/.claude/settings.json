@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "_comment": "Pavement Engineering Agent settings. The runner in psci_repro/agent.py sets allowed_tools, mcp_servers, model, and setting_sources programmatically per session; this file lets the SDK auto-discovery pick up the .claude/ tree (CLAUDE.md, agents/, skills/).",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Bash",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write",
+      "Agent",
+      "Task",
+      "Skill",
+      "mcp__pavement__compute_distress_coverage",
+      "mcp__pavement__psci_rubric_lookup",
+      "mcp__pavement__distress_taxonomy_crosswalk",
+      "mcp__pavement__list_band_signatures",
+      "mcp__pavement__read_manual_section",
+      "mcp__pavement__emit_rating"
+    ],
+    "deny": [
+      "WebFetch",
+      "WebSearch"
+    ]
+  },
+  "env": {
+    "PYTHONUNBUFFERED": "1"
+  }
+}

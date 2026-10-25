@@ -1,0 +1,9 @@
+# Versions installed in the study environment, except claude-agent-sdk: the study used 0.1.75
+# (bundled Claude Code CLI 2.1.131), which is no longer on PyPI; 0.1.76 (CLI 2.1.132) is the
+# next release. mcp is pinned because newer releases break claude-agent-sdk 0.1.x.
+anthropic==0.97.0
+openai==2.34.0
+claude-agent-sdk==0.1.76
+mcp==1.27.0
+python-dotenv==1.2.2
+PyYAML==6.0.3
